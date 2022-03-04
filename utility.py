@@ -10,6 +10,7 @@ def create_model(name):
     model.summary()
     return model
 
+
 def pre_process(records, prms):
     after_norm = (records - prms[0]) / prms[1]
     return after_norm
@@ -17,6 +18,10 @@ def pre_process(records, prms):
 def post_process(preds, prms):
     before_norm = preds * prms[1] + prms[0]
     return before_norm
+
+def norm(inputs):
+    after_norm = ( inputs - min(inputs) ) / ( max(inputs) - min(inputs) ) 
+    return after_norm
 
 def img(img_dir, m_total_loss_list, m_ave_loss_list, SNR_ave_list, SNR_total_list, SNR_label_list):
     

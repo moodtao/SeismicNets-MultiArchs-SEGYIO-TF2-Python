@@ -1,0 +1,77 @@
+2022-03-01 20:32:20.034727: I tensorflow/core/platform/cpu_feature_guard.cc:151] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 AVX512F FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2022-03-01 20:32:20.417325: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1525] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 4144 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 3070, pci bus id: 0000:b3:00.0, compute capability: 8.6
+2022-03-01 20:32:25.481204: I tensorflow/stream_executor/cuda/cuda_dnn.cc:366] Loaded cuDNN version 8202
+2022-03-01 20:32:27.146898: I tensorflow/stream_executor/cuda/cuda_blas.cc:1774] TensorFloat-32 will be used for the matrix multiplication. This will only be logged once.
+1 Physical GPU, 1 Logical GPUs
+Model: "attn_unet"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ conv2d (Conv2D)             multiple                  0 (unused)
+                                                                 
+ conv2d_1 (Conv2D)           multiple                  0 (unused)
+                                                                 
+ conv2d_2 (Conv2D)           multiple                  0 (unused)
+                                                                 
+ conv2d_3 (Conv2D)           multiple                  0 (unused)
+                                                                 
+ conv2d_4 (Conv2D)           multiple                  0 (unused)
+                                                                 
+ conv2d_5 (Conv2D)           multiple                  0 (unused)
+                                                                 
+ conv2d_6 (Conv2D)           multiple                  0 (unused)
+                                                                 
+ conv2d_7 (Conv2D)           multiple                  0 (unused)
+                                                                 
+ conv2d_8 (Conv2D)           multiple                  0 (unused)
+                                                                 
+ conv2d_9 (Conv2D)           multiple                  0 (unused)
+                                                                 
+ conv2d_transpose (Conv2DTra  multiple                 0 (unused)
+ nspose)                                                         
+                                                                 
+ conv2d_10 (Conv2D)          multiple                  0 (unused)
+                                                                 
+ conv2d_11 (Conv2D)          multiple                  0 (unused)
+                                                                 
+ conv2d_transpose_1 (Conv2DT  multiple                 0 (unused)
+ ranspose)                                                       
+                                                                 
+ conv2d_12 (Conv2D)          multiple                  0 (unused)
+                                                                 
+ conv2d_13 (Conv2D)          multiple                  0 (unused)
+                                                                 
+ conv2d_transpose_2 (Conv2DT  multiple                 0 (unused)
+ ranspose)                                                       
+                                                                 
+ conv2d_14 (Conv2D)          multiple                  0 (unused)
+                                                                 
+ conv2d_15 (Conv2D)          multiple                  0 (unused)
+                                                                 
+ conv2d_transpose_3 (Conv2DT  multiple                 0 (unused)
+ ranspose)                                                       
+                                                                 
+ conv2d_16 (Conv2D)          multiple                  0 (unused)
+                                                                 
+ conv2d_17 (Conv2D)          multiple                  0 (unused)
+                                                                 
+ conv2d_18 (Conv2D)          multiple                  0 (unused)
+                                                                 
+ max_pooling2d (MaxPooling2D  multiple                 0 (unused)
+ )                                                               
+                                                                 
+ conv2d_19 (Conv2D)          multiple                  0 (unused)
+                                                                 
+ conv2d_20 (Conv2D)          multiple                  0 (unused)
+                                                                 
+ conv2d_21 (Conv2D)          multiple                  0 (unused)
+                                                                 
+=================================================================
+Total params: 1
+Trainable params: 1
+Non-trainable params: 0
+_________________________________________________________________
+Trace Count:  10823, Ns:   1201, Total Batch:    255
+Trace Count:  10823, Ns:   1201, Test Total Batch:    255
+Predictions Saved!

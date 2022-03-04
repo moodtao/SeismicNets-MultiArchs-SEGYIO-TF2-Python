@@ -6,78 +6,110 @@ import segyio
 import numpy as np
 import tensorflow as tf
 from shutil import copyfile
+from collections import Counter
 
 
 class DATAIO():
-    def __init__(self, inputs_path, labels_path, preds_file, batch_size, valid_ratio):
-        self.inputs_path = inputs_path
-        self.labels_path = labels_path
-        self.preds_file  = preds_file
-        self.batch_size  = batch_size
-        self.valid_ratio = valid_ratio
-        self.trace_count = 0
-        self.ns          = 0
+    def __init__(self, inputs_path, labels_path, tests_path, preds_path, valid_ratio):
+        self.inputs_path   = inputs_path
+        self.labels_path   = labels_path
+        self.tests_path    = tests_path
+        self.preds_path    = preds_path
+        self.valid_ratio   = valid_ratio
+        self.trace_count   = 0
+        self.ns            = 0
+        self.cdpt_max_list = []
+        self.inputs_file   = 0
+        self.spec          = 0
+        self.labels_file   = 0
 
     def read_data(self):
-
-        inputs_file = segyio.open(self.inputs_path, ignore_geometry=True)
-        labels_file = segyio.open(self.labels_path, ignore_geometry=True)
-
-        inputs = inputs_file.trace.raw[:]
-        labels = labels_file.trace.raw[:]
-
-        if np.shape(inputs)[0] != np.shape(labels)[0]:
+        self.inputs_file   = segyio.open(self.inputs_path, ignore_geometry=True)
+        self.labels_file   = segyio.open(self.labels_path, ignore_geometry=True)
+        if self.inputs_file.tracecount != self.labels_file.tracecount:
             print('Mismatched Train Datasets!!')
             sys.exit()
 
         #trace count
-        self.trace_count = np.shape(inputs)[0]
+        self.trace_count = self.inputs_file.tracecount
         #sampling points
-        self.ns = np.shape(inputs)[1]
+        self.ns = self.inputs_file.bin[segyio.BinField.Samples]
 
         #cdpt max
-        cdpt_list = []
-        cdpt_key  = re.compile(r'(?<=CDP_TRACE: )\d+')
-        for trace in np.arange(inputs_file.tracecount):
-            cdpt_list.append(int(cdpt_key.findall(str(inputs_file.header[trace].values()))[0]))
-        cdpt_list.append(-1e10)
-
-        cdpt_max_list = []
-        for i in np.arange(len(cdpt_list)-1):
-            if cdpt_list[i] > cdpt_list[i+1]:
-                cdpt_max_list.append(cdpt_list[i])
-            else:
-                pass
-
-        total_batch = len(cdpt_max_list) // self.batch_size
+        CDP                = self.inputs_file.attributes(segyio.TraceField.CDP)[:]
+        CDP_counter        = dict( Counter(CDP) )
+        self.cdpt_max_list = list( CDP_counter.values() )
+        total_batch        = len(self.cdpt_max_list)
         print('Trace Count: {0:6d}, Ns: {1:6d}, Total Batch: {2:6d}'.format(self.trace_count, self.ns, total_batch))
 
         idxes = np.arange(int(total_batch))
-
-        inputs = inputs.reshape((self.trace_count, self.ns, 1))
-        labels = labels.reshape((self.trace_count, self.ns, 1))
-
-        _prms = [];
-        _prms.append(np.mean(inputs))
-        _prms.append(max(np.std(inputs), 1e-4))
-
         _batch = int(int(total_batch) * self.valid_ratio)
         idxes_valid = np.ceil(np.linspace(0, total_batch - 1, _batch)).astype(int)
         idxes_train = np.array(list(set(idxes).difference(set(idxes_valid))))
         np.random.shuffle(idxes_train)
 
-        inputs_file.close()
-        labels_file.close()
+        _prms = [];
+        _prms.append(np.mean(self.inputs_file.trace.raw[:int(self.trace_count*0.001)]))
+        _prms.append(max(np.std(self.inputs_file.trace.raw[:int(self.trace_count*0.001)]), 1e-4))
 
-        return inputs, labels, cdpt_max_list, self.ns, _prms, idxes_train, idxes_valid, idxes
+        return _prms, idxes_train, idxes_valid
 
-    def write_data(self, preds, preds_path):
-        copyfile(self.inputs_path, preds_path)
+    def read_inputs(self):
+        self.inputs_file   = 0
+        self.cdpt_max_list = []
 
-        preds_file = segyio.open(preds_path, 'r+', ignore_geometry=True)
-        preds = preds.reshape((self.trace_count, self.ns))
-        preds_file.trace.raw[:] = preds
+        self.inputs_file   = segyio.open(self.tests_path, ignore_geometry=True)
+        self.spec          = segyio.tools.metadata(self.inputs_file)
+        #trace count
+        self.trace_count = self.inputs_file.tracecount
+        #sampling points
+        self.ns = self.inputs_file.bin[segyio.BinField.Samples]
 
-        preds_file.close()
+        #cdpt max
+        CDP                = self.inputs_file.attributes(segyio.TraceField.CDP)[:]
+        CDP_counter        = dict( Counter(CDP) )
+        self.cdpt_max_list = list( CDP_counter.values() )
+        total_batch        = len(self.cdpt_max_list)
+        print('Trace Count: {0:6d}, Ns: {1:6d}, Test Total Batch: {2:6d}'.format(self.trace_count, self.ns, total_batch))
 
-        return print('Predictions Saved!')
+        idxes = np.arange(int(total_batch))
+
+        _prms = [];
+        _prms.append(np.mean(self.inputs_file.trace.raw[:int(self.trace_count*0.001)]))
+        _prms.append(max(np.std(self.inputs_file.trace.raw[:int(self.trace_count*0.001)]), 1e-4))
+
+        return _prms, idxes
+
+    def copy_(self):
+        return self.inputs_file, self.spec
+
+    def loc_(self, i):
+        trace_start  = sum(self.cdpt_max_list[:i])
+        trace_end    = trace_start + self.cdpt_max_list[i]
+        return trace_start, trace_end        
+
+    def ret_train_gather(self, i, mute):
+        trace_start, trace_end = self.loc_(i)
+        inputs = self.inputs_file.trace.raw[trace_start:trace_end][:,mute:self.ns]
+        inputs = inputs.reshape(1, self.cdpt_max_list[i], self.ns-mute, 1)
+        labels = self.labels_file.trace.raw[trace_start:trace_end][:,mute:self.ns]
+        labels = labels.reshape(1, self.cdpt_max_list[i], self.ns-mute, 1)
+        return inputs, labels
+
+    def ret_test_gather(self, i, mute):
+        trace_start, trace_end = self.loc_(i)
+        inputs = self.inputs_file.trace.raw[trace_start:trace_end][:,mute:self.ns]
+        inputs = inputs.reshape(1, self.cdpt_max_list[i], self.ns-mute, 1)
+        return inputs
+
+    def write_gather(self, i, _preds, _file, mute):
+        trace_start, trace_end = self.loc_(i)
+        gather       = np.zeros(np.shape(_preds))
+        gather[0]    = _preds[0]
+        _gather      = self.inputs_file.trace.raw[trace_start:trace_end]
+        _gather[:][:,mute:self.ns] = gather.reshape(self.cdpt_max_list[i], self.ns-mute)
+        _file.trace.raw[trace_start:trace_end] = _gather
+
+    def close_files(self):
+        self.inputs_file.close()
+        self.labels_file.close()
